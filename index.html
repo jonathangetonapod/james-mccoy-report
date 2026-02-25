@@ -3,24 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>James McCoy — Live Campaign Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<title>Budgyt — Live Campaign Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root {
-    --bg: #1a1a2e;
-    --card: #16213e;
-    --card-border: #2a2d4a;
-    --text: #ffffff;
-    --text-muted: #a0a8b8;
-    --accent: #4a90d9;
-    --green: #2ecc71;
-    --amber: #fbbf24;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --card-border: #e2e8f0;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --accent: #0891b2;
+    --accent-light: rgba(8,145,178,0.1);
+    --accent-glow: rgba(8,145,178,0.15);
+    --green: #10b981;
+    --green-glow: rgba(16,185,129,0.12);
+    --amber: #f59e0b;
+    --amber-glow: rgba(245,158,11,0.12);
+    --red: #ef4444;
+    --purple: #8b5cf6;
+    --purple-glow: rgba(139,92,246,0.12);
+    --teal: #14b8a6;
+    --teal-glow: rgba(20,184,166,0.12);
   }
 
   * { margin:0; padding:0; box-sizing:border-box; }
 
   body {
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
@@ -29,94 +39,643 @@
 
   .container { max-width:960px; margin:0 auto; }
 
-  .header { text-align:center; margin-bottom:40px; }
-  .header-label { font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--accent); font-weight:600; margin-bottom:12px; }
-  .header h1 { font-family:'Playfair Display',serif; font-size:32px; font-weight:700; color:#fff; margin-bottom:8px; }
-  .header-sub { font-size:14px; color:var(--text-muted); margin-bottom:12px; }
-
-  .setup-card {
+  /* ── Source Bar ── */
+  .source-bar {
     background: var(--card);
     border: 1px solid var(--card-border);
-    border-radius: 16px;
-    padding: 40px;
-    text-align: center;
-    max-width: 600px;
-    margin: 0 auto;
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 36px;
+    flex-wrap: wrap;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
-
-  .setup-card h2 {
-    font-family: 'Playfair Display', serif;
-    font-size: 24px;
-    margin-bottom: 16px;
-    color: var(--accent);
-  }
-
-  .setup-card p {
-    color: var(--text-muted);
-    line-height: 1.8;
-    margin-bottom: 20px;
-  }
-
-  .setup-card ul {
-    text-align: left;
-    color: var(--text-muted);
-    line-height: 2;
-    margin: 20px 0;
-    padding-left: 20px;
-  }
-
-  .setup-card li { margin-bottom: 8px; }
-  .setup-card li strong { color: var(--text); }
-
-  .badge {
-    display: inline-block;
-    background: rgba(46,204,113,0.1);
-    border: 1px solid rgba(46,204,113,0.3);
-    color: var(--green);
+  .source-bar label { font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; white-space:nowrap; }
+  .source-bar input {
+    flex: 1; min-width:200px;
+    background: var(--bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 8px 12px;
     font-size: 12px;
-    font-weight: 600;
-    padding: 6px 14px;
-    border-radius: 20px;
-    margin-top: 20px;
+    font-family: 'Inter', sans-serif;
+    color: var(--text-muted);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .source-bar input:focus { border-color:var(--accent); color:var(--text); }
+
+  .btn-refresh {
+    display: flex; align-items:center; gap:7px;
+    background: var(--accent); color:#fff;
+    border:none; border-radius:8px;
+    padding: 9px 18px;
+    font-size:13px; font-weight:600; font-family:'Inter',sans-serif;
+    cursor:pointer; transition:background 0.2s,transform 0.1s; white-space:nowrap;
+  }
+  .btn-refresh:hover { background:#0e7490; }
+  .btn-refresh:active { transform:scale(0.97); }
+  .btn-refresh:disabled { background:#94a3b8; cursor:not-allowed; }
+  .btn-refresh.spinning svg { animation:spin 1s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  .status-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .status-dot.idle    { background:var(--text-muted); }
+  .status-dot.loading { background:var(--amber); animation:pulse 0.8s infinite; }
+  .status-dot.ok      { background:var(--green); }
+  .status-dot.err     { background:var(--red); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .status-text { font-size:11px; color:var(--text-muted); white-space:nowrap; }
+
+  /* ── Error Banner ── */
+  .error-banner {
+    display:none;
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius:10px; padding:12px 18px;
+    font-size:13px; color:var(--red); margin-bottom:24px;
   }
 
-  .footer {
-    text-align: center;
-    margin-top: 60px;
-    font-size: 12px;
-    color: var(--text-muted);
+  /* ── Header ── */
+  .header { text-align:center; margin-bottom:40px; }
+  .header-label { font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--accent); font-weight:600; margin-bottom:12px; }
+  .header h1 { font-size:36px; font-weight:700; color:var(--text); margin-bottom:8px; }
+  .header-sub { font-size:14px; color:var(--text-muted); margin-bottom:12px; }
+  .header-sub span { color:var(--green); font-weight:600; }
+  .sync-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--green-glow); border:1px solid rgba(16,185,129,0.3);
+    border-radius:20px; padding:4px 14px;
+    font-size:11px; color:var(--green); font-weight:600;
+  }
+  .sync-pulse { width:6px; height:6px; background:var(--green); border-radius:50%; animation:pulse 2s infinite; }
+
+  /* ── KPI Cards ── */
+  .kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  .kpi {
+    background:var(--card); border:1px solid var(--card-border);
+    border-radius:14px; padding:22px 18px; text-align:center;
+    position:relative; overflow:hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .kpi::before { content:''; position:absolute; top:0;left:0;right:0; height:3px; }
+  .kpi.teal::before   { background:linear-gradient(90deg,var(--accent),#22d3ee); }
+  .kpi.green::before  { background:linear-gradient(90deg,var(--green),#34d399); }
+  .kpi.amber::before  { background:linear-gradient(90deg,var(--amber),#fbbf24); }
+  .kpi.purple::before { background:linear-gradient(90deg,var(--purple),#a78bfa); }
+  .kpi-value { font-size:36px; font-weight:700; color:var(--text); line-height:1; margin-bottom:6px; }
+  .kpi-label { font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-weight:500; }
+  .kpi-badge { display:inline-block; margin-top:8px; font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; }
+  .kpi-badge.green  { background:var(--green-glow);  color:var(--green); }
+  .kpi-badge.teal   { background:var(--accent-glow); color:var(--accent); }
+  .kpi-badge.amber  { background:var(--amber-glow);  color:var(--amber); }
+  .kpi-badge.purple { background:var(--purple-glow); color:var(--purple); }
+
+  /* ── Sections ── */
+  .section { background:var(--card); border:1px solid var(--card-border); border-radius:16px; padding:32px; margin-bottom:24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .section-title { font-size:20px; font-weight:700; color:var(--text); margin-bottom:6px; }
+  .section-sub { font-size:13px; color:var(--text-muted); margin-bottom:20px; }
+
+  .chart-container { position:relative; height:280px; }
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px; }
+  .two-col .section { margin-bottom:0; }
+
+  /* ── Funnel ── */
+  .funnel { display:flex; align-items:stretch; gap:2px; height:90px; margin-bottom:20px; }
+  .funnel-step {
+    flex:1; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    border-radius:10px; padding:10px 8px;
+    position:relative; text-align:center;
+    transition:opacity 0.2s;
+  }
+  .funnel-step:hover { opacity:0.85; }
+  .funnel-step.f1 { background:linear-gradient(135deg,rgba(8,145,178,0.2),rgba(8,145,178,0.1)); border:1px solid rgba(8,145,178,0.3); }
+  .funnel-step.f2 { background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(139,92,246,0.1)); border:1px solid rgba(139,92,246,0.3); }
+  .funnel-step.f3 { background:linear-gradient(135deg,rgba(16,185,129,0.2),rgba(16,185,129,0.1)); border:1px solid rgba(16,185,129,0.3); }
+  .funnel-step.f4 { background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(245,158,11,0.1)); border:1px solid rgba(245,158,11,0.3); }
+  .funnel-arrow { display:flex; align-items:center; color:var(--card-border); font-size:18px; flex-shrink:0; }
+  .funnel-num { font-size:24px; font-weight:700; color:var(--text); line-height:1; }
+  .funnel-label { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; font-weight:600; margin-top:3px; }
+  .funnel-rate { font-size:11px; font-weight:700; margin-top:4px; }
+  .funnel-rate.teal   { color:var(--accent); }
+  .funnel-rate.purple { color:var(--purple); }
+  .funnel-rate.green  { color:var(--green); }
+  .funnel-rate.amber  { color:var(--amber); }
+
+  /* ── Donut ── */
+  .donut-container { position:relative; height:200px; }
+  .donut-legend { margin-top:16px; display:flex; flex-direction:column; gap:8px; }
+  .legend-item { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-muted); }
+  .legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .legend-count { margin-left:auto; font-weight:600; color:var(--text); }
+
+  /* ── Table ── */
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  thead th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:1.2px; color:var(--text-muted); font-weight:600; padding:10px 14px; border-bottom:1px solid var(--card-border); }
+  thead th:not(:first-child) { text-align:right; }
+  tbody td { padding:14px; border-bottom:1px solid var(--bg); color:var(--text); }
+  tbody td:not(:first-child) { text-align:right; font-variant-numeric:tabular-nums; }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr.highlight td { color:var(--text); font-weight:600; }
+  .trend-up   { color:var(--green); font-weight:600; font-size:12px; }
+  .trend-down { color:var(--red);   font-weight:600; font-size:12px; }
+  .trend-flat { color:var(--amber); font-weight:600; font-size:12px; }
+
+  /* ── Scenario bars ── */
+  .scenario-row { display:flex; align-items:center; gap:14px; margin-bottom:14px; }
+  .scenario-label { font-size:13px; color:var(--text-muted); min-width:200px; flex-shrink:0; }
+  .scenario-bar-bg { flex:1; height:32px; background:var(--bg); border-radius:8px; overflow:hidden; }
+  .scenario-bar {
+    height:100%; border-radius:8px;
+    display:flex; align-items:center; justify-content:flex-end;
+    padding-right:12px; font-size:13px; font-weight:700; color:#fff;
+    transition:width 0.9s ease; min-width:50px;
+  }
+  .scenario-bar.teal  { background:linear-gradient(90deg,rgba(8,145,178,0.5),var(--accent)); }
+  .scenario-bar.green { background:linear-gradient(90deg,rgba(16,185,129,0.5),var(--green)); }
+  .scenario-bar.amber { background:linear-gradient(90deg,rgba(245,158,11,0.5),var(--amber)); }
+
+  /* ── Footer ── */
+  .footer { text-align:center; margin-top:40px; padding-top:24px; border-top:1px solid var(--card-border); }
+  .footer-text { font-size:12px; color:var(--text-muted); margin-top:8px; }
+
+  @media (max-width:700px) {
+    .kpi-row    { grid-template-columns:repeat(2,1fr); }
+    .kpi-value  { font-size:28px; }
+    .header h1  { font-size:24px; }
+    .section    { padding:20px; }
+    .two-col    { grid-template-columns:1fr; }
+    .funnel     { flex-direction:column; height:auto; gap:8px; }
+    .funnel-arrow { display:none; }
+    .scenario-label { min-width:130px; font-size:12px; }
+    .source-bar { flex-direction:column; align-items:stretch; }
   }
 </style>
 </head>
 <body>
 <div class="container">
 
+  <!-- Source Bar -->
+  <div class="source-bar">
+    <label>Sheet URL</label>
+    <input id="sheet-url" type="text" placeholder="Paste your Google Sheets URL here…" />
+    <button class="btn-refresh" id="btn-refresh" onclick="handleRefresh()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+      Refresh
+    </button>
+    <div class="status-dot idle" id="status-dot"></div>
+    <span class="status-text" id="status-text">Not loaded</span>
+  </div>
+
+  <div class="error-banner" id="error-banner"></div>
+
+  <!-- Header -->
   <div class="header">
+    <img src="https://budgyt.com/wp-content/uploads/2024/02/Budgyt-logo-dark.png"
+         alt="Budgyt"
+         style="height:40px;margin-bottom:24px;display:block;margin-left:auto;margin-right:auto;"
+         onerror="this.style.display='none'">
     <div class="header-label">Live Campaign Dashboard</div>
     <h1>James McCoy</h1>
-    <div class="header-sub">Lead Gen Jay · Cold Email Campaigns</div>
+    <div class="header-sub">November 2025 — Present &nbsp;·&nbsp; <span id="header-total">— Total Leads</span></div>
+    <div class="sync-badge">
+      <span class="sync-pulse"></span>
+      Last synced: <span id="sync-time">—</span>
+    </div>
   </div>
 
-  <div class="setup-card">
-    <h2>🚀 Dashboard Setup</h2>
-    <p>This dashboard is ready to be configured for James McCoy's campaigns.</p>
-    
-    <ul>
-      <li><strong>Google Sheet URL:</strong> Connect lead tracking sheet</li>
-      <li><strong>Instantly Data:</strong> Pull campaign metrics via BridgeKit</li>
-      <li><strong>Client Branding:</strong> Add logo and colors</li>
-      <li><strong>Campaign Details:</strong> Configure active campaigns</li>
-    </ul>
-
-    <p>Once configured, this dashboard will show real-time lead counts, funnel metrics, forecasts, and pipeline health — just like Brian Rechtman's dashboard.</p>
-
-    <div class="badge">✓ Railway + GitHub Connected</div>
+  <!-- KPI Row -->
+  <div class="kpi-row">
+    <div class="kpi teal">
+      <div class="kpi-value" id="kpi-total">—</div>
+      <div class="kpi-label">Total Leads</div>
+      <div class="kpi-badge teal">All campaigns</div>
+    </div>
+    <div class="kpi green">
+      <div class="kpi-value" id="kpi-rate">—</div>
+      <div class="kpi-label">Leads / Day</div>
+      <div class="kpi-badge green" id="kpi-rate-badge">Current pace</div>
+    </div>
+    <div class="kpi amber">
+      <div class="kpi-value" id="kpi-demos">—</div>
+      <div class="kpi-label">Demo Requests</div>
+      <div class="kpi-badge amber">High intent</div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-value" id="kpi-projected">—</div>
+      <div class="kpi-label">March Forecast</div>
+      <div class="kpi-badge purple">At current pace</div>
+    </div>
   </div>
 
+  <!-- Campaign Funnel -->
+  <div class="section">
+    <div class="section-title">Lead Response Funnel</div>
+    <div class="section-sub">Breakdown of all lead responses by qualification status</div>
+
+    <div class="funnel">
+      <div class="funnel-step f1">
+        <div class="funnel-num" id="funnel-total">—</div>
+        <div class="funnel-label">Total Responses</div>
+        <div class="funnel-rate teal">100%</div>
+      </div>
+      <div class="funnel-arrow">›</div>
+      <div class="funnel-step f2">
+        <div class="funnel-num" id="funnel-interested">—</div>
+        <div class="funnel-label">Interested</div>
+        <div class="funnel-rate purple" id="funnel-interested-rate">—</div>
+      </div>
+      <div class="funnel-arrow">›</div>
+      <div class="funnel-step f3">
+        <div class="funnel-num" id="funnel-demos">—</div>
+        <div class="funnel-label">Demo Requests</div>
+        <div class="funnel-rate green" id="funnel-demos-rate">—</div>
+      </div>
+      <div class="funnel-arrow">›</div>
+      <div class="funnel-step f4">
+        <div class="funnel-num" id="funnel-conditional">—</div>
+        <div class="funnel-label">Conditional</div>
+        <div class="funnel-rate amber" id="funnel-conditional-rate">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lead Trend -->
+  <div class="section">
+    <div class="section-title">Lead Trend</div>
+    <div class="section-sub">Monthly leads vs. daily pace — showing campaign momentum over time</div>
+    <div class="chart-container">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Monthly Breakdown + Lead Types -->
+  <div class="two-col">
+    <div class="section">
+      <div class="section-title">Monthly Breakdown</div>
+      <div class="section-sub">Leads and daily pace by month</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Month</th><th>Leads</th><th>/Day</th><th>vs Prev</th></tr></thead>
+          <tbody id="monthly-tbody">
+            <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:24px;">Hit Refresh to load</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:var(--text-muted);" id="month-note">* Current month</div>
+    </div>
+    <div class="section">
+      <div class="section-title">Lead Types</div>
+      <div class="section-sub">How leads are responding to outreach</div>
+      <div class="donut-container">
+        <canvas id="typeChart"></canvas>
+      </div>
+      <div class="donut-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#0891b2;"></div>Interested / More Info<span class="legend-count" id="legend-interested">—</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:#10b981;"></div>Demo Request<span class="legend-count" id="legend-demo">—</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f59e0b;"></div>Conditional Interest<span class="legend-count" id="legend-conditional">—</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:#64748b;"></div>Other<span class="legend-count" id="legend-other">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- March Forecast -->
+  <div class="section">
+    <div class="section-title">March 2026 Forecast</div>
+    <div class="section-sub" id="march-sub">Projected leads for March based on current performance</div>
+
+    <div id="march-scenarios" style="margin-bottom:24px;">
+      <div class="scenario-row">
+        <div class="scenario-label" style="color:var(--text-muted);">Conservative (current pace)</div>
+        <div class="scenario-bar-bg">
+          <div class="scenario-bar teal" id="bar-conservative" style="width:0%;">—</div>
+        </div>
+      </div>
+      <div class="scenario-row">
+        <div class="scenario-label" style="color:var(--green);font-weight:600;">Baseline (avg pace)</div>
+        <div class="scenario-bar-bg">
+          <div class="scenario-bar green" id="bar-baseline" style="width:0%;">—</div>
+        </div>
+      </div>
+      <div class="scenario-row">
+        <div class="scenario-label" style="color:var(--amber);font-weight:600;">Optimistic (+25%)</div>
+        <div class="scenario-bar-bg">
+          <div class="scenario-bar amber" id="bar-optimistic" style="width:0%;">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
   <div class="footer">
-    Powered by Lead Gen Jay · Built Feb 2026
+    <img src="https://budgyt.com/wp-content/uploads/2024/02/Budgyt-logo-dark.png"
+         alt="Budgyt"
+         style="height:28px;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;opacity:0.7;"
+         onerror="this.style.display='none'">
+    <div class="footer-text" id="footer-sync">Google Sheets data: live · Powered by Lead Gen Jay</div>
   </div>
 
 </div>
+<script>
+// ─────────────────────────────────────────────────────────
+//  Config
+// ─────────────────────────────────────────────────────────
+const DEFAULT_URL = 'https://docs.google.com/spreadsheets/d/1AoTL96_mJwKBVjWCuJ0Mq67akskTwPA5egoz7XBF9-A/edit?gid=0#gid=0';
+const LS_KEY = 'budgyt_sheet_url';
+
+const MONTH_ORDER  = ['November','January','February'];
+const MONTH_LABELS = { November:'Nov', January:'Jan', February:'Feb' };
+const MONTH_DAYS   = { November:30, January:31, February:28 };
+
+let trendChart = null, typeChart = null;
+
+// ─────────────────────────────────────────────────────────
+//  Init
+// ─────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  initCharts();
+  const saved = localStorage.getItem(LS_KEY) || DEFAULT_URL;
+  document.getElementById('sheet-url').value = saved;
+  fetchAndRender(saved);
+});
+
+// ─────────────────────────────────────────────────────────
+//  UI Helpers
+// ─────────────────────────────────────────────────────────
+function setStatus(state, msg) {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  const btn = document.getElementById('btn-refresh');
+  const err = document.getElementById('error-banner');
+  dot.className = 'status-dot ' + state;
+  err.style.display = 'none';
+  if (state === 'loading') {
+    txt.textContent = 'Fetching data…'; btn.disabled = true; btn.classList.add('spinning');
+  } else if (state === 'ok') {
+    txt.textContent = msg || 'Up to date'; btn.disabled = false; btn.classList.remove('spinning');
+  } else if (state === 'err') {
+    txt.textContent = 'Failed'; btn.disabled = false; btn.classList.remove('spinning');
+    err.style.display = 'block';
+    err.innerHTML = `<strong>Could not load data:</strong> ${msg}<br><br>Make sure the sheet is set to <strong>Share → Anyone with the link → Viewer</strong>.`;
+  } else {
+    txt.textContent = 'Not loaded'; btn.disabled = false; btn.classList.remove('spinning');
+  }
+}
+
+function handleRefresh() {
+  const url = document.getElementById('sheet-url').value.trim();
+  if (url) fetchAndRender(url);
+}
+
+// ─────────────────────────────────────────────────────────
+//  Fetch & Parse
+// ─────────────────────────────────────────────────────────
+async function fetchAndRender(url) {
+  setStatus('loading');
+  try {
+    const { id, gid } = parseSheetUrl(url);
+    if (!id) throw new Error('Could not find a spreadsheet ID in that URL.');
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&gid=${gid}&t=${Date.now()}`;
+    const resp = await fetch(csvUrl, { cache: 'no-store' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const rows = parseCSV(await resp.text());
+    renderDashboard(rows);
+    localStorage.setItem(LS_KEY, url);
+    setStatus('ok', 'Up to date');
+  } catch (e) {
+    setStatus('err', e.message);
+  }
+}
+
+function parseSheetUrl(url) {
+  const idM = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  const gidM = url.match(/[#?&]gid=(\d+)/);
+  return { id: idM ? idM[1] : null, gid: gidM ? gidM[1] : '0' };
+}
+
+function parseCSV(csv) {
+  const lines = csv.split('\n');
+  if (lines.length < 2) return [];
+  const headers = splitLine(lines[0]);
+  return lines.slice(1).filter(l => l.trim()).map(l => {
+    const vals = splitLine(l);
+    return headers.reduce((o, h, i) => ({ ...o, [h.trim()]: (vals[i] || '').trim() }), {});
+  }).filter(r => r['Month'] && r['Month'].length > 0);
+}
+
+function splitLine(line) {
+  const out = []; let cur = ''; let q = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { q = !q; }
+    else if (c === ',' && !q) { out.push(cur); cur = ''; }
+    else { cur += c; }
+  }
+  out.push(cur);
+  return out;
+}
+
+// ─────────────────────────────────────────────────────────
+//  Render Dashboard
+// ─────────────────────────────────────────────────────────
+function renderDashboard(rows) {
+  const byMonth = {};
+  MONTH_ORDER.forEach(m => byMonth[m] = 0);
+  
+  let interested = 0, demos = 0, conditional = 0, other = 0;
+
+  rows.forEach(row => {
+    const m = row['Month'];
+    if (m in byMonth) byMonth[m]++;
+    
+    const t = (row['Response Type'] || '').toLowerCase();
+    if (t.includes('demo')) demos++;
+    else if (t.includes('interested') || t.includes('more info')) interested++;
+    else if (t.includes('conditional')) conditional++;
+    else other++;
+  });
+
+  const total = rows.length;
+
+  // Current month calculations
+  const currentMonth = 'February';
+  const currentRows = rows.filter(r => r['Month'] === currentMonth);
+  let currentDays = 28;
+  if (currentRows.length > 0) {
+    const valid = currentRows.map(r => r['Response Date']).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).map(d => new Date(d));
+    if (valid.length > 0) currentDays = Math.max(...valid.map(d => d.getDate()));
+  }
+
+  const currentCount = byMonth[currentMonth] || 0;
+  const rate = currentDays > 0 ? +(currentCount / currentDays).toFixed(2) : 0;
+  const daysLeft = 28 - currentDays;
+  const projected = Math.round(currentCount + rate * daysLeft);
+
+  // March forecast
+  const marchConservative = Math.round(rate * 31);
+  const avgRate = total / ((MONTH_ORDER.indexOf(currentMonth) + 1) * 30);
+  const marchBaseline = Math.round(avgRate * 31);
+  const marchOptimistic = Math.round(marchConservative * 1.25);
+
+  // ── Update KPIs ──
+  document.getElementById('kpi-total').textContent = total;
+  document.getElementById('kpi-rate').textContent = rate.toFixed(2);
+  document.getElementById('kpi-demos').textContent = demos;
+  document.getElementById('kpi-projected').textContent = marchConservative + '–' + marchOptimistic;
+  document.getElementById('header-total').textContent = `${total} Total Leads`;
+
+  // ── Funnel ──
+  document.getElementById('funnel-total').textContent = total;
+  document.getElementById('funnel-interested').textContent = interested;
+  document.getElementById('funnel-demos').textContent = demos;
+  document.getElementById('funnel-conditional').textContent = conditional;
+  document.getElementById('funnel-interested-rate').textContent = total > 0 ? ((interested / total) * 100).toFixed(0) + '%' : '—';
+  document.getElementById('funnel-demos-rate').textContent = total > 0 ? ((demos / total) * 100).toFixed(0) + '%' : '—';
+  document.getElementById('funnel-conditional-rate').textContent = total > 0 ? ((conditional / total) * 100).toFixed(0) + '%' : '—';
+
+  // ── Sync time ──
+  const now = new Date();
+  const fmtDate = d => d.toLocaleString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  document.getElementById('sync-time').textContent = fmtDate(now);
+  document.getElementById('footer-sync').textContent = `Google Sheets: live · ${total} total leads · Powered by Lead Gen Jay`;
+
+  // ── Monthly table ──
+  const tbody = document.getElementById('monthly-tbody');
+  tbody.innerHTML = '';
+  let prev = null;
+  MONTH_ORDER.forEach(m => {
+    const count = byMonth[m];
+    const days = m === currentMonth ? currentDays : MONTH_DAYS[m];
+    const mRate = days > 0 ? (count / days).toFixed(2) : '0.00';
+    const isCurr = m === currentMonth;
+    const label = MONTH_LABELS[m] + (isCurr ? ' *' : '');
+    let trendHtml = '<span style="color:var(--text-muted)">—</span>';
+    if (prev !== null && prev > 0) {
+      const pct = Math.round((count - prev) / prev * 100);
+      if (count > prev) trendHtml = `<span class="trend-up">+${pct}%</span>`;
+      else if (count < prev) trendHtml = `<span class="trend-down">${pct}%</span>`;
+      else trendHtml = `<span class="trend-flat">0%</span>`;
+    }
+    prev = count;
+    tbody.innerHTML += `<tr${isCurr?' class="highlight"':''}>
+      <td>${label}</td><td>${count}</td><td>${mRate}</td><td>${trendHtml}</td></tr>`;
+  });
+
+  document.getElementById('month-note').textContent = daysLeft > 0 
+    ? `* Through day ${currentDays} of 28 · ${daysLeft} days remaining` 
+    : '* Full month complete';
+
+  // ── March Forecast bars ──
+  const marchMax = marchOptimistic * 1.1;
+  const pct = v => Math.min(97, Math.round(v / marchMax * 100));
+  document.getElementById('march-sub').textContent = `At ${rate.toFixed(2)} leads/day — here's what March looks like`;
+  document.getElementById('bar-conservative').style.width = pct(marchConservative) + '%';
+  document.getElementById('bar-conservative').textContent = marchConservative + ' leads';
+  document.getElementById('bar-baseline').style.width = pct(marchBaseline) + '%';
+  document.getElementById('bar-baseline').textContent = marchBaseline + ' leads';
+  document.getElementById('bar-optimistic').style.width = '97%';
+  document.getElementById('bar-optimistic').textContent = marchOptimistic + '+ leads';
+
+  // ── Charts ──
+  const chartCounts = MONTH_ORDER.map(m => byMonth[m]);
+  const chartRates = MONTH_ORDER.map(m => {
+    const d = m === currentMonth ? currentDays : MONTH_DAYS[m];
+    return d > 0 ? +(byMonth[m] / d * 10).toFixed(2) : 0;
+  });
+  const chartLabels = MONTH_ORDER.map(m => MONTH_LABELS[m] + (m === currentMonth ? ' *' : ''));
+
+  trendChart.data.labels = chartLabels;
+  trendChart.data.datasets[0].data = chartCounts;
+  trendChart.data.datasets[1].data = chartRates;
+  trendChart.update();
+
+  typeChart.data.datasets[0].data = [interested, demos, conditional, other];
+  typeChart.update();
+
+  document.getElementById('legend-interested').textContent = interested;
+  document.getElementById('legend-demo').textContent = demos;
+  document.getElementById('legend-conditional').textContent = conditional;
+  document.getElementById('legend-other').textContent = other;
+}
+
+// ─────────────────────────────────────────────────────────
+//  Charts
+// ─────────────────────────────────────────────────────────
+function initCharts() {
+  const tCtx = document.getElementById('trendChart').getContext('2d');
+  const tGrad = tCtx.createLinearGradient(0, 0, 0, 280);
+  tGrad.addColorStop(0, 'rgba(8,145,178,0.25)');
+  tGrad.addColorStop(1, 'rgba(8,145,178,0.00)');
+
+  trendChart = new Chart(tCtx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: 'Leads', data: [],
+          borderColor:'#0891b2', backgroundColor:tGrad, borderWidth:3,
+          pointBackgroundColor:'#fff', pointBorderColor:'#0891b2', pointBorderWidth:2.5,
+          pointRadius:6, pointHoverRadius:8, tension:0.35, fill:true,
+        },
+        {
+          label: 'Leads/Day (×10)', data: [],
+          borderColor:'#10b981', borderWidth:2, borderDash:[6,4],
+          pointBackgroundColor:'#10b981', pointBorderColor:'#10b981',
+          pointRadius:4, pointHoverRadius:6, tension:0.35, fill:false,
+        }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ intersect:false, mode:'index' },
+      plugins:{
+        legend:{ display:true, position:'top', align:'end',
+          labels:{ color:'#64748b', font:{family:'Inter',size:11}, boxWidth:20, padding:16, usePointStyle:true, pointStyle:'line' }},
+        tooltip:{
+          backgroundColor:'#1e293b', titleColor:'#fff', bodyColor:'#94a3b8',
+          borderColor:'#334155', borderWidth:1,
+          titleFont:{family:'Inter',weight:'600',size:13}, bodyFont:{family:'Inter',size:12},
+          padding:12, cornerRadius:10, displayColors:true,
+          callbacks:{ label: ctx => ctx.datasetIndex===0 ? ` Leads: ${ctx.raw}` : ` Leads/Day: ${(ctx.raw/10).toFixed(2)}` }
+        }
+      },
+      scales:{
+        x:{ grid:{color:'rgba(0,0,0,0.05)'}, ticks:{color:'#64748b',font:{family:'Inter',size:12,weight:'500'}} },
+        y:{ grid:{color:'rgba(0,0,0,0.05)'}, ticks:{color:'#64748b',font:{family:'Inter',size:11},stepSize:5}, beginAtZero:true }
+      }
+    }
+  });
+
+  const dCtx = document.getElementById('typeChart').getContext('2d');
+  typeChart = new Chart(dCtx, {
+    type:'doughnut',
+    data:{
+      labels:['Interested / More Info','Demo Request','Conditional Interest','Other'],
+      datasets:[{ data:[0,0,0,0], backgroundColor:['#0891b2','#10b981','#f59e0b','#64748b'], borderColor:'#fff', borderWidth:3, hoverOffset:6 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'68%',
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          backgroundColor:'#1e293b', titleColor:'#fff', bodyColor:'#94a3b8',
+          borderColor:'#334155', borderWidth:1,
+          titleFont:{family:'Inter',weight:'600',size:13}, bodyFont:{family:'Inter',size:12},
+          padding:12, cornerRadius:10,
+          callbacks:{ label: ctx => { const t=ctx.dataset.data.reduce((a,b)=>a+b,0); return ` ${ctx.raw} (${t>0?((ctx.raw/t)*100).toFixed(1):0}%)`; } }
+        }
+      }
+    }
+  });
+}
+</script>
 </body>
 </html>
