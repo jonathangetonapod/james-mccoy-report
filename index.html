@@ -199,6 +199,35 @@
   .scenario-bar.green { background:linear-gradient(90deg,rgba(16,185,129,0.5),var(--green)); }
   .scenario-bar.amber { background:linear-gradient(90deg,rgba(245,158,11,0.5),var(--amber)); }
 
+  /* ── Outreach Stats ── */
+  .outreach-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px; }
+  .outreach-stat {
+    background:var(--bg); border-radius:12px; padding:20px; text-align:center;
+  }
+  .outreach-stat-value { font-size:28px; font-weight:700; color:var(--text); line-height:1; margin-bottom:4px; }
+  .outreach-stat-label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; }
+  .outreach-stat.highlight { background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(16,185,129,0.05)); border:1px solid rgba(16,185,129,0.2); }
+  .outreach-stat.highlight .outreach-stat-value { color:var(--green); }
+
+  /* ── Health Bar ── */
+  .health-bar { display:flex; gap:2px; height:24px; border-radius:6px; overflow:hidden; margin-top:16px; }
+  .health-segment { transition:flex 0.5s ease; }
+  .health-segment.healthy { background:var(--green); }
+  .health-segment.at-risk { background:var(--amber); }
+  .health-segment.unhealthy { background:var(--red); }
+  .health-legend { display:flex; gap:20px; margin-top:12px; justify-content:center; }
+  .health-legend-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-muted); }
+  .health-legend-dot { width:10px; height:10px; border-radius:50%; }
+
+  /* ── Campaign List ── */
+  .campaign-item { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--bg); }
+  .campaign-item:last-child { border-bottom:none; }
+  .campaign-status { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .campaign-status.active { background:var(--green); }
+  .campaign-status.paused { background:var(--amber); }
+  .campaign-name { flex:1; font-size:14px; color:var(--text); }
+  .campaign-date { font-size:12px; color:var(--text-muted); }
+
   /* ── Footer ── */
   .footer { text-align:center; margin-top:40px; padding-top:24px; border-top:1px solid var(--card-border); }
   .footer-text { font-size:12px; color:var(--text-muted); margin-top:8px; }
@@ -213,6 +242,7 @@
     .funnel-arrow { display:none; }
     .scenario-label { min-width:130px; font-size:12px; }
     .source-bar { flex-direction:column; align-items:stretch; }
+    .outreach-grid { grid-template-columns:repeat(2,1fr); }
   }
 </style>
 </head>
@@ -251,12 +281,78 @@
     </div>
   </div>
 
+  <!-- Outreach Performance (Instantly via BridgeKit) -->
+  <div class="section">
+    <div class="section-title">📧 Outreach Performance</div>
+    <div class="section-sub">Instantly campaign metrics (last 90 days) · Connected via BridgeKit</div>
+    
+    <div class="outreach-grid">
+      <div class="outreach-stat">
+        <div class="outreach-stat-value" id="instantly-sent">217,175</div>
+        <div class="outreach-stat-label">Emails Sent</div>
+      </div>
+      <div class="outreach-stat">
+        <div class="outreach-stat-value" id="instantly-replies">236</div>
+        <div class="outreach-stat-label">Replies</div>
+      </div>
+      <div class="outreach-stat highlight">
+        <div class="outreach-stat-value" id="instantly-rate">0.11%</div>
+        <div class="outreach-stat-label">Reply Rate</div>
+      </div>
+      <div class="outreach-stat">
+        <div class="outreach-stat-value" id="instantly-opps">23</div>
+        <div class="outreach-stat-label">Opportunities</div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:13px;font-weight:600;color:var(--text);">Mailbox Health</span>
+        <span style="font-size:12px;color:var(--green);font-weight:600;" id="mailbox-summary">201/201 Healthy</span>
+      </div>
+      <div class="health-bar">
+        <div class="health-segment healthy" id="health-healthy" style="flex:201;"></div>
+        <div class="health-segment at-risk" id="health-atrisk" style="flex:0;"></div>
+        <div class="health-segment unhealthy" id="health-unhealthy" style="flex:0;"></div>
+      </div>
+      <div class="health-legend">
+        <div class="health-legend-item"><div class="health-legend-dot" style="background:var(--green);"></div>Healthy</div>
+        <div class="health-legend-item"><div class="health-legend-dot" style="background:var(--amber);"></div>At Risk</div>
+        <div class="health-legend-item"><div class="health-legend-dot" style="background:var(--red);"></div>Unhealthy</div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px;">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;">Active Campaigns (4)</div>
+      <div class="campaign-item">
+        <div class="campaign-status active"></div>
+        <div class="campaign-name">New List - Churches and Nonprofits</div>
+        <div class="campaign-date">Feb 16, 2026</div>
+      </div>
+      <div class="campaign-item">
+        <div class="campaign-status active"></div>
+        <div class="campaign-name">(Optimized) List 1-Nonprofit Finance Leaders with Boards</div>
+        <div class="campaign-date">Jan 26, 2026</div>
+      </div>
+      <div class="campaign-item">
+        <div class="campaign-status active"></div>
+        <div class="campaign-name">Zoom Jan List - Nonprofit Finance Leaders</div>
+        <div class="campaign-date">Jan 8, 2026</div>
+      </div>
+      <div class="campaign-item">
+        <div class="campaign-status active"></div>
+        <div class="campaign-name">RB2B - Mid Market For-Profit Finance Leaders</div>
+        <div class="campaign-date">Dec 16, 2025</div>
+      </div>
+    </div>
+  </div>
+
   <!-- KPI Row -->
   <div class="kpi-row">
     <div class="kpi teal">
       <div class="kpi-value" id="kpi-total">—</div>
-      <div class="kpi-label">Total Leads</div>
-      <div class="kpi-badge teal">All campaigns</div>
+      <div class="kpi-label">Positive Leads</div>
+      <div class="kpi-badge teal">From replies</div>
     </div>
     <div class="kpi green">
       <div class="kpi-value" id="kpi-rate">—</div>
@@ -379,7 +475,7 @@
          alt="Budgyt"
          style="height:28px;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;opacity:0.7;"
          onerror="this.style.display='none'">
-    <div class="footer-text" id="footer-sync">Google Sheets data: live · Powered by Lead Gen Jay</div>
+    <div class="footer-text" id="footer-sync">Google Sheets + BridgeKit data · Powered by Lead Gen Jay</div>
   </div>
 
 </div>
@@ -529,7 +625,7 @@ function renderDashboard(rows) {
   document.getElementById('kpi-rate').textContent = rate.toFixed(2);
   document.getElementById('kpi-demos').textContent = demos;
   document.getElementById('kpi-projected').textContent = marchConservative + '–' + marchOptimistic;
-  document.getElementById('header-total').textContent = `${total} Total Leads`;
+  document.getElementById('header-total').textContent = `${total} Positive Leads`;
 
   // ── Funnel ──
   document.getElementById('funnel-total').textContent = total;
@@ -544,7 +640,7 @@ function renderDashboard(rows) {
   const now = new Date();
   const fmtDate = d => d.toLocaleString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' });
   document.getElementById('sync-time').textContent = fmtDate(now);
-  document.getElementById('footer-sync').textContent = `Google Sheets: live · ${total} total leads · Powered by Lead Gen Jay`;
+  document.getElementById('footer-sync').textContent = `Google Sheets + BridgeKit data · ${total} positive leads · Powered by Lead Gen Jay`;
 
   // ── Monthly table ──
   const tbody = document.getElementById('monthly-tbody');
